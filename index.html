@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IncaBiotec PCR | Dashboard</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* =========================================
+           VARIABLES Y TEMAS
+           ========================================= */
+        :root {
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius: 16px;
+        }
+        
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #050505 0%, #0a0a12 100%);
+            --sidebar-bg: rgba(10, 10, 15, 0.4);
+            --card-bg: rgba(20, 20, 25, 0.45);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --modal-bg: rgba(15, 15, 20, 0.85);
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f4f4f5 0%, #e4e4e7 100%);
+            --sidebar-bg: rgba(255, 255, 255, 0.5);
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --text-main: #18181b;
+            --text-muted: #61616a;
+            --primary: #6d28d9;
+            --primary-glow: rgba(109, 40, 217, 0.3);
+            --input-bg: rgba(255, 255, 255, 0.7);
+            --input-border: rgba(0, 0, 0, 0.1);
+            --modal-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            outline: none;
+        }
+
+        /* =========================================
+           ESTILOS GLOBALES
+           ========================================= */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -10%; left: 15%;
+            width: 45vw; height: 45vw;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 65%);
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--card-shadow);
+        }
+
+        /* =========================================
+           SIDEBAR
+           ========================================= */
+        .sidebar {
+            width: 250px;
+            background: var(--sidebar-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            padding: 28px 20px;
+            z-index: 10;
+        }
+
+        .brand {
+            padding: 0 8px 32px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+        
+        .brand span {
+            color: var(--primary);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn:hover {
+            background: var(--input-bg);
+            color: var(--text-main);
+        }
+        
+        .nav-btn.active { 
+            background: var(--primary); 
+            color: white; 
+            box-shadow: 0 4px 15px var(--primary-glow);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+        
+        .nav-btn-text {
+            display: inline-block;
+        }
+        
+        .spacer {
+            flex-grow: 1;
+        }
+
+        /* =========================================
+           CONTENIDO PRINCIPAL
+           ========================================= */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        #pdf-container {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 0.8fr 1.2fr;
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        .card {
+            border-radius: var(--radius);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 { 
+            font-size: 1.15rem; 
+            margin-bottom: 24px; 
+            font-weight: 600; 
+            letter-spacing: -0.3px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+        }
+        
+        /* =========================================
+           FORMULARIOS E INPUTS
+           ========================================= */
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 16px;
+            flex-grow: 1;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .input-group.full {
+            grid-column: span 2;
+        }
+
+        /* Se remueve text-transform: uppercase para no afectar al símbolo µ */
+        .input-label { 
+            font-size: 0.8rem; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            letter-spacing: 0.05em; 
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 2px var(--primary-glow);
+            background: rgba(0,0,0,0.5);
+        }
+
+        /* =========================================
+           TABLAS
+           ========================================= */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+        
+        /* Se remueve text-transform: uppercase para no afectar al símbolo µ */
+        th { 
+            padding: 0 16px 8px;
+            text-align: left;
+            font-weight: 600; 
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        
+        td { 
+            padding: 14px 16px; 
+            background: var(--input-bg);
+            border-top: 1px solid var(--card-border);
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        tr td:first-child {
+            border-left: 1px solid var(--card-border);
+            border-radius: 8px 0 0 8px;
+            font-weight: 500;
+        }
+        
+        tr td:last-child {
+            border-right: 1px solid var(--card-border);
+            border-radius: 0 8px 8px 0;
+            color: var(--primary);
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        tr td:nth-child(2) {
+            text-align: right;
+        }
+        
+        tr:hover td {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* =========================================
+           BOTONES
+           ========================================= */
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+        
+        .btn-text { 
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--input-border); 
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .btn-text:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+
+        /* =========================================
+           MODALES
+           ========================================= */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center; 
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .modal-content {
+            background: var(--modal-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 650px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(24px);
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 16px;
+        }
+        
+        .modal-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .close-btn:hover {
+            color: var(--text-main);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 32px;
+        }
+
+        /* Estilos Internos del Modal */
+        .protocol-box {
+            background: var(--input-bg);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .protocol-box h4 {
+            color: var(--primary);
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+        }
+        
+        .protocol-box p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* Tabla de Configuración de Stock */
+        .stock-grid { 
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 0.8fr;
+            gap: 12px; 
+            align-items: center;
+            margin-bottom: 6px; 
+            background: var(--input-bg);
+            padding: 6px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .stock-grid.header {
+            background: transparent;
+            border-bottom: none;
+            border-radius: 0;
+            padding-bottom: 2px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .stock-grid input {
+            padding: 6px 12px;
+            text-align: left;
+        }
+        
+        .stock-unit {
+            text-align: right;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Header genérico para celdas */
+        .text-header-sm {
+            font-size: 0.7rem; 
+            color: var(--text-muted); 
+            font-weight: 600; 
+            letter-spacing: 0.05em;
+        }
+
+        /* =========================================
+           PDF
+           ========================================= */
+        #pdf-header {
+            display: none;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 12px;
+            grid-column: span 2;
+        }
+        
+        .pdf-mode {
+            display: grid !important;
+            max-width: 100% !important;
+        }
+        
+        .pdf-mode .glass {
+            background: #111;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+            box-shadow: none;
+        }
+        
+        [data-theme="light"] .pdf-mode .glass {
+            background: #fff;
+            border: 1px solid #ddd;
+        }
+
+        /* =========================================
+           MEDIA QUERIES (RESPONSIVE CELULAR)
+           ========================================= */
+        @media (max-width: 900px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { 
+                width: 100%; flex-direction: row; flex-wrap: wrap; 
+                padding: 15px 20px; border-right: none; border-bottom: 1px solid var(--card-border); 
+                position: sticky; top: 0; z-index: 100; align-items: center; justify-content: space-between;
+            }
+            .brand { padding: 0; margin-bottom: 0; margin-right: 20px; }
+            .spacer { display: none; }
+            .nav-btn { width: auto; margin-bottom: 0; padding: 10px 15px; justify-content: center; }
+            .main-content { padding: 20px; overflow-y: visible; display: block; }
+            #pdf-container { grid-template-columns: 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 600px) {
+            .brand { width: 100%; justify-content: center; margin-bottom: 15px; margin-right: 0; }
+            .nav-btn-text { display: none; }
+            .nav-btn { flex: 1; margin: 0 4px; padding: 12px; }
+            .nav-btn svg { margin: 0; }
+            .grid-inputs { grid-template-columns: 1fr; }
+            .input-group.full { grid-column: span 1; }
+            .modal-content { padding: 24px 20px; }
+            
+            /* Corrección para la tabla de Stock en celular */
+            .stock-grid.header { display: none; }
+            .stock-grid {
+                grid-template-columns: 1fr 1fr 45px;
+                gap: 10px;
+                margin-bottom: 12px;
+                padding: 12px;
+            }
+            .stock-grid > span:first-child {
+                grid-column: 1 / -1;
+                border-bottom: 1px solid var(--card-border);
+                padding-bottom: 6px;
+                color: var(--primary);
+                font-weight: 600;
+            }
+            .stock-unit { text-align: right; font-size: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar glass">
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/></svg>
+            IncaBiotec <span>PCR</span>
+        </div>
+        
+        <button class="nav-btn active">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z"/></svg>
+            <span class="nav-btn-text">Master Mix</span>
+        </button>
+        <button class="nav-btn" onclick="openModal('modal-protocolos')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+            <span class="nav-btn-text">Protocolos</span>
+        </button>
+        <button class="nav-btn" onclick="openModal('modal-ajustes')">
+            <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+            <span class="nav-btn-text">Ajustes Stock</span>
+        </button>
+        
+        <div class="spacer"></div>
+        
+        <button class="nav-btn" onclick="toggleTheme()">
+            <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
+            <span class="nav-btn-text">Tema</span>
+        </button>
+        <button class="nav-btn" onclick="exportPDF()" style="color: var(--primary);">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            <span class="nav-btn-text">Exportar PDF</span>
+        </button>
+    </nav>
+
+    <main class="main-content">
+        <div id="pdf-container">
+            <div id="pdf-header">
+                <h1 style="font-size: 1.5rem;">Reporte Analítico: Master Mix</h1>
+            </div>
+
+            <div class="card glass">
+                <h2>Parámetros Operativos</h2>
+                <div class="grid-inputs">
+                    <div class="input-group">
+                        <span class="input-label">VOL. RXN (µL)</span>
+                        <input type="number" id="vRxn" oninput="calc()" placeholder="Ej. 20">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-label">N° REACCIONES</span>
+                        <input type="number" id="nRxn" oninput="calc()" placeholder="Ej. 13">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-label">[MgCl₂] BUFFER</span>
+                        <input type="number" id="mgBuf" step="0.1" oninput="calc()" value="7.5">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-label">VOL. ADN (µL)</span>
+                        <input type="number" id="vDna" step="0.1" oninput="calc()" value="1">
+                    </div>
+                    
+                    <div class="input-group full">
+                        <span class="input-label">ADITIVO / POTENCIADOR</span>
+                        <select id="enh" onchange="calc()">
+                            <option value="none">Ninguno</option>
+                            <option value="bsa">BSA</option>
+                            <option value="dmso">DMSO</option>
+                        </select>
+                    </div>
+                    <div class="input-group full">
+                        <span class="input-label">PROTOCOLO TARGET</span>
+                        <select id="tType" onchange="updateTq()">
+                            <option value="diag">Diagnóstico (Punto Final)</option>
+                            <option value="seq">Secuenciamiento (Sanger)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card glass">
+                <h2>Composición del Master Mix</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>REACTIVO</th>
+                            <th style="text-align: right;">1 RXN (µL)</th>
+                            <th style="text-align: right;">TOTAL (µL)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbMix">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal" id="modal-protocolos">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3>Programas de PCR</h3>
+                <button class="close-btn" onclick="closeModal('modal-protocolos')">&times;</button>
+            </div>
+            
+            <div class="protocol-box">
+                <h4>AHPND - Nested PCR (Toxina PirA/PirB)</h4>
+                <p>
+                    <strong>Paso 1 (Externo):</strong> 94°C x 2 min | 30 ciclos: 94°C (30s) - 60°C (30s) - 72°C (30s) | 72°C x 5 min.<br>
+                    <strong>Paso 2 (Anidado):</strong> 94°C x 2 min | 30 ciclos: 94°C (30s) - 60°C (30s) - 72°C (30s) | 72°C x 5 min.<br>
+                    <i>* Usar 1µL del producto del Paso 1 como molde para el Paso 2.</i>
+                </p>
+            </div>
+            
+            <div class="protocol-box">
+                <h4>WSSV - Síndrome de la Mancha Blanca</h4>
+                <p>
+                    <strong>Inicial:</strong> 95°C x 5 min.<br>
+                    <strong>35 ciclos:</strong> 95°C (30s) - 55°C (30s) - 72°C (1 min).<br>
+                    <strong>Final:</strong> 72°C x 7 min.
+                </p>
+            </div>
+            
+            <div class="protocol-box">
+                <h4>ITS - Región Ribosomal para Hongos</h4>
+                <p>
+                    <strong>Primers:</strong> ITS1 / ITS4.<br>
+                    <strong>Inicial:</strong> 95°C x 3 min.<br>
+                    <strong>35 ciclos:</strong> 95°C (30s) - 56°C (30s) - 72°C (1 min).<br>
+                    <strong>Final:</strong> 72°C x 10 min.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-ajustes">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3>Configuración de Stock (C1 / C2)</h3>
+                <button class="close-btn" onclick="closeModal('modal-ajustes')">&times;</button>
+            </div>
+            
+            <div class="stock-grid header">
+                <span class="text-header-sm">REACTIVO</span>
+                <span class="text-header-sm">C1 (STOCK)</span>
+                <span class="text-header-sm">C2 (FINAL)</span>
+                <span class="text-header-sm" style="text-align: right;">UND.</span>
+            </div>
+            
+            <div id="stock-container"></div>
+            
+            <div class="modal-footer">
+                <button class="btn-text" onclick="resetStock()">Restaurar Default</button>
+                <button class="btn-primary" onclick="saveStock()">Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // UTILIDADES
+        // =========================================
+        const $ = id => document.getElementById(id);
+        const val = id => parseFloat($(id).value) || 0;
+
+        // =========================================
+        // ESTADO GLOBAL
+        // =========================================
+        const DEFAULT_STOCK = {
+            s_buf: 5, i_buf: 1, u_buf: 'X', 
+            s_mg: 50, i_mg: 1.5, u_mg: 'mM',
+            s_dntp: 10, i_dntp: 0.2, u_dntp: 'mM', 
+            s_pf: 15, i_pf: 0.36, u_pf: 'µM',
+            s_pr: 15, i_pr: 0.36, u_pr: 'µM', 
+            s_bsa: 10, i_bsa: 0.5, u_bsa: 'X',
+            s_dmso: 100, i_dmso: 1, u_dmso: '%', 
+            s_tq: 5, i_tq: 0.025, u_tq: 'U/µL'
+        };
+        let cStock = {};
+
+        // =========================================
+        // INICIALIZACIÓN Y EVENTOS GLOBALES
+        // =========================================
+        function init() {
+            cStock = JSON.parse(localStorage.getItem('pcr_stock_incabiotec')) || { ...DEFAULT_STOCK };
+            buildStock();
+            calc();
+
+            // Cerrar modales con tecla Esc
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal.active').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                }
+            });
+        }
+
+        function toggleTheme() {
+            const doc = document.documentElement;
+            doc.setAttribute('data-theme', doc.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        }
+
+        function openModal(id) {
+            $(id).classList.add('active');
+        }
+        
+        function closeModal(id) {
+            $(id).classList.remove('active');
+        }
+
+        // =========================================
+        // GESTIÓN DE STOCK
+        // =========================================
+        function buildStock() {
+            const container = $('stock-container');
+            container.innerHTML = '';
+            const items = [
+                { id: 'buf', n: 'Buffer PCR' }, { id: 'mg', n: 'MgCl₂' },
+                { id: 'dntp', n: 'dNTPs Mix' }, { id: 'pf', n: 'Forward Primer' },
+                { id: 'pr', n: 'Reverse Primer' }, { id: 'bsa', n: 'BSA' },
+                { id: 'dmso', n: 'DMSO' }, { id: 'tq', n: 'Taq Polimerasa' }
+            ];
+
+            items.forEach(item => {
+                container.innerHTML += `
+                    <div class="stock-grid">
+                        <span style="font-weight: 500;">${item.n}</span>
+                        <input type="number" id="m_s_${item.id}" value="${cStock[`s_${item.id}`]}" step="any" placeholder="C1">
+                        <input type="number" id="m_i_${item.id}" value="${cStock[`i_${item.id}`]}" step="any" placeholder="C2">
+                        <span class="stock-unit">${cStock[`u_${item.id}`]}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function saveStock() {
+            ['buf','mg','dntp','pf','pr','bsa','dmso','tq'].forEach(id => {
+                cStock[`s_${id}`] = val(`m_s_${id}`);
+                cStock[`i_${id}`] = val(`m_i_${id}`);
+            });
+            localStorage.setItem('pcr_stock_incabiotec', JSON.stringify(cStock));
+            closeModal('modal-ajustes');
+            calc();
+        }
+
+        function resetStock() {
+            cStock = { ...DEFAULT_STOCK };
+            localStorage.removeItem('pcr_stock_incabiotec');
+            buildStock();
+            calc();
+        }
+
+        function updateTq() {
+            cStock.i_tq = $('tType').value === 'diag' ? 0.025 : 0.04;
+            if($('m_i_tq')) $('m_i_tq').value = cStock.i_tq;
+            calc();
+        }
+
+        // =========================================
+        // LÓGICA DE CÁLCULO (C1V1 = C2V2)
+        // =========================================
+        function calc() {
+            const vRxn = val('vRxn');
+            const nRxn = val('nRxn');
+            const mgBuf = val('mgBuf');
+            const vDna = val('vDna');
+            const enh = $('enh').value;
+            const tb = $('tbMix');
+            
+            tb.innerHTML = "";
+
+            if (!vRxn || !nRxn) {
+                tb.innerHTML = "<tr><td colspan='3' style='text-align:center; padding: 30px; color: var(--text-muted);'>Ingrese Volumen y N° de Reacciones</td></tr>";
+                return;
+            }
+
+            const getV1 = (s, i) => (cStock[i] * vRxn) / (cStock[s] || 1);
+
+            const vBuf = getV1('s_buf', 'i_buf');
+            const vDntp = getV1('s_dntp', 'i_dntp');
+            const vPf = getV1('s_pf', 'i_pf');
+            const vPr = getV1('s_pr', 'i_pr');
+            const vTq = getV1('s_tq', 'i_tq');
+
+            const dilBuf = cStock.s_buf / (cStock.i_buf || 1);
+            const mgFromBuf = mgBuf / (dilBuf || 1);
+            const reqMg = Math.max(0, cStock.i_mg - mgFromBuf);
+            const vMg = cStock.s_mg > 0 ? (reqMg * vRxn) / cStock.s_mg : 0;
+
+            let vEnh = 0; let enhName = "";
+            if (enh !== "none") {
+                vEnh = getV1(`s_${enh}`, `i_${enh}`);
+                enhName = enh.toUpperCase();
+            }
+
+            const vH2o = vRxn - vDna - vBuf - vMg - vDntp - vPf - vPr - vTq - vEnh;
+
+            const addRow = (name, v) => {
+                const isError = name.includes('Agua') && v < 0;
+                tb.innerHTML += `<tr>
+                    <td>${name}</td>
+                    <td>${isError ? '<span style="color:#ef4444;">Error</span>' : v.toFixed(2)}</td>
+                    <td>${isError ? '--' : (v * nRxn).toFixed(2)}</td>
+                </tr>`;
+            };
+
+            addRow("Agua Libre de Nucleasas", vH2o);
+            addRow("Buffer PCR", vBuf);
+            addRow("MgCl₂ Extra", vMg);
+            addRow("dNTPs Mix", vDntp);
+            addRow("Forward Primer", vPf);
+            addRow("Reverse Primer", vPr);
+            if (enh !== "none") addRow(enhName, vEnh);
+            addRow("Taq ADN Polimerasa", vTq);
+        }
+
+        // =========================================
+        // EXPORTACIÓN A PDF
+        // =========================================
+        function exportPDF() {
+            const container = document.getElementById('pdf-container');
+            container.classList.add('pdf-mode');
+            $('pdf-header').style.display = 'block';
+
+            const inputs = container.querySelectorAll('input, select');
+            const backups = [];
+            
+            inputs.forEach(el => {
+                const span = document.createElement('span');
+                span.style.padding = "8px 12px"; 
+                span.style.display = "inline-block";
+                span.style.textAlign = "center";
+                span.innerText = el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : (el.value || '--');
+                backups.push({el, span});
+                el.parentNode.insertBefore(span, el);
+                el.style.display = 'none';
+            });
+
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            html2pdf().set({
+                margin: 15, filename: 'Reporte_IncaBiotec_PCR.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, backgroundColor: isDark ? '#0a0a0a' : '#ffffff' },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            }).from(container).save().then(() => {
+                // Restaurar DOM
+                backups.forEach(b => { b.el.style.display = ''; b.span.remove(); });
+                container.classList.remove('pdf-mode');
+                $('pdf-header').style.display = 'none';
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
